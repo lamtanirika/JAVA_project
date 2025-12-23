@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VNR BANK Dashboard</title>
+<style>
+body {
+  font-family:'Segoe UI',sans-serif;
+  background:linear-gradient(135deg,#001a33,#003366);
+  margin:0;
+  text-align:center;
+  color:white;
+  overflow-x:hidden;
+}
+header {
+  background:#00142b;
+  color:#ffcc33;
+  padding:22px;
+  font-size:28px;
+  font-weight:bold;
+  box-shadow:0 4px 10px rgba(0,0,0,0.4);
+}
+.container {
+  max-width:1000px;
+  margin:40px auto;
+  background:#0a1a3b;
+  padding:30px;
+  border-radius:20px;
+  box-shadow:0 6px 16px rgba(0,0,0,0.5);
+}
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:20px;
+  margin-top:30px;
+}
+.card {
+  background:#00224d;
+  border-radius:15px;
+  padding:25px;
+  box-shadow:0 4px 8px rgba(0,0,0,0.3);
+  transition:transform .3s,box-shadow .3s;
+}
+.card:hover {
+  transform:translateY(-5px) scale(1.02);
+  box-shadow:0 8px 16px rgba(0,0,0,0.4);
+}
+input,button {
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ffcc80;
+  margin-top:8px;
+  width:80%;
+}
+input {
+  background:#fff;
+  color:#000;
+}
+button {
+  background:#ffb300;
+  color:white;
+  font-weight:bold;
+  border:none;
+  cursor:pointer;
+  transition:0.3s;
+}
+button:hover {
+  background:#ff8f00;
+  transform:scale(1.05);
+}
+.history {
+  background:#142850;
+  padding:10px;
+  border-radius:10px;
+  margin-top:10px;
+  text-align:left;
+  max-height:150px;
+  overflow-y:auto;
+  color:#f1f1f1;
+}
+footer {
+  background:#00142b;
+  color:#ffcc33;
+  padding:10px;
+  margin-top:40px;
+  box-shadow:0 -4px 8px rgba(0,0,0,0.4);
+}
+/* Modal Popup */
+.modal {
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.6);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  backdrop-filter:blur(5px);
+  z-index:10;
+}
+.modal-content {
+  background:#0d224d;
+  padding:25px;
+  border-radius:15px;
+  width:340px;
+  text-align:center;
+  color:#fff;
+  box-shadow:0 6px 12px rgba(0,0,0,0.4);
+  animation:fadeIn 0.4s ease;
+}
+.modal-content h3 {
+  color:#ffca28;
+  margin-bottom:10px;
+}
+.modal.show { display:flex; }
+@keyframes fadeIn {
+  from {opacity:0; transform:scale(0.9);}
+  to {opacity:1; transform:scale(1);}
+}
+</style>
+</head>
+<body>
+
+<header>🏦 Welcome to VNR BANK Dashboard</header>
+
+<div class="container">
+  <h2 id="welcome"></h2>
+  <p>Account No: <span id="acc"></span> | 💰 Balance: ₹<span id="bal">0</span></p>
+  
+  <div class="grid">
+    <div class="card">
+      <h3>💵 Deposit</h3>
+      <input type="number" id="depAmt" placeholder="Enter Amount">
+      <button onclick="deposit()">Deposit</button>
+    </div>
+
+    <div class="card">
+      <h3>💸 Withdraw</h3>
+      <input type="number" id="withAmt" placeholder="Enter Amount">
+      <button onclick="withdraw()">Withdraw</button>
+    </div>
+
+    <div class="card">
+      <h3>📊 Check Balance</h3>
+      <button onclick="checkBal()">Show Balance</button>
+    </div>
+
+    <div class="card">
+      <h3>📋 Account Details</h3>
+      <button onclick="details()">View Details</button>
+    </div>
+
+    <div class="card">
+      <h3>🧾 Transaction History</h3>
+      <div id="hist" class="history">No transactions yet!</div>
+    </div>
+
+    <div class="card">
+      <h3>🚪 Logout</h3>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Popup Modal -->
+<div class="modal" id="popup">
+  <div class="modal-content">
+    <h3 id="popupTitle"></h3>
+    <p id="popupText"></p>
+    <button onclick="closePopup()">OK</button>
+  </div>
+</div>
+
+<footer>© 2025 VNR BANK | Secure Digital Banking for Everyone</footer>
+
+<script>
+let data = JSON.parse(localStorage.getItem("vnrAccount") || "{}");
+
+// 🔹 Load the latest account data from full account list to show saved history
+if (data.accNo) {
+  let all = JSON.parse(localStorage.getItem("vnrAccounts") || "[]");
+  let stored = all.find(a => a.accNo === data.accNo);
+  if (stored) data = stored;
+} else {
+  window.location.href = "bank.html";
+}
+
+document.getElementById("welcome").innerText = "Welcome, " + data.name + "!";
+document.getElementById("acc").innerText = data.accNo;
+document.getElementById("bal").innerText = data.balance;
+update(); // show history immediately
+
+function save() {
+  localStorage.setItem("vnrAccount", JSON.stringify(data));
+  let all = JSON.parse(localStorage.getItem("vnrAccounts") || "[]");
+  const idx = all.findIndex(a => a.accNo === data.accNo);
+  if (idx !== -1) { all[idx] = data; }
+  localStorage.setItem("vnrAccounts", JSON.stringify(all));
+}
+
+function showPopup(title, text) {
+  document.getElementById("popupTitle").innerText = title;
+  document.getElementById("popupText").innerHTML = text;
+  document.getElementById("popup").classList.add("show");
+}
+
+function closePopup() {
+  document.getElementById("popup").classList.remove("show");
+}
+
+function deposit() {
+  const amt = parseFloat(document.getElementById("depAmt").value);
+  if (amt > 0) {
+    data.balance += amt;
+    data.history.push("Deposited ₹" + amt + " on " + new Date().toLocaleString());
+    update();
+    showPopup("✅ Deposit Successful", "₹" + amt + " has been added to your account.");
+    document.getElementById("depAmt").value = "";
+  } else {
+    showPopup("⚠ Invalid Amount", "Please enter a valid amount to deposit.");
+  }
+}
+
+function withdraw() {
+  const amt = parseFloat(document.getElementById("withAmt").value);
+  if (amt > 0 && amt <= data.balance) {
+    data.balance -= amt;
+    data.history.push("Withdrawn ₹" + amt + " on " + new Date().toLocaleString());
+    update();
+    showPopup("💸 Withdraw Successful", "₹" + amt + " has been withdrawn successfully.");
+    document.getElementById("withAmt").value = "";
+  } else if (amt > data.balance) {
+    showPopup("🚫 Insufficient Balance", "You don't have enough balance.");
+  } else {
+    showPopup("⚠ Invalid Amount", "Please enter a valid amount.");
+  }
+}
+
+function checkBal() {
+  showPopup("💰 Current Balance", "Your current balance is ₹" + data.balance);
+}
+
+function details() {
+  showPopup("👤 Account Details",
+    "Name: " + data.name +
+    "<br>Account No: " + data.accNo +
+    "<br>Balance: ₹" + data.balance);
+}
+
+function update() {
+  document.getElementById("bal").innerText = data.balance;
+  const h = document.getElementById("hist");
+  h.innerHTML = data.history && data.history.length
+    ? data.history.map(x => "➡ " + x).join("<br>")
+    : "No transactions yet!";
+  save();
+}
+
+function logout() {
+  showPopup("🙏 Logout", "Thank you for banking with VNR BANK!");
+  setTimeout(() => window.location.href = "bank.html", 1500);
+}
+</script>
+</body>
+</html>

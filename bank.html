@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏦 VNR BANK</title>
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #001f3f, #004080);
+  margin: 0;
+  text-align: center;
+  color: #fff;
+}
+header {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 20px 0;
+  font-size: 1.8em;
+  letter-spacing: 1px;
+  font-weight: bold;
+  color: #ffcc33;
+  text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+}
+.container {
+  background: #0a1a3b;
+  margin: 80px auto;
+  max-width: 400px;
+  padding: 35px;
+  border-radius: 15px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+}
+h1 {
+  color: #ffd54f;
+  margin-bottom: 20px;
+}
+input {
+  width: 80%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ffcc80;
+  border-radius: 8px;
+  background: #fdfdfd;
+  color: #000;
+}
+button {
+  padding: 10px 20px;
+  background: #ffb300;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+  font-weight: bold;
+}
+button:hover {
+  background: #ff8f00;
+  transform: scale(1.05);
+}
+.switch {
+  color: #64b5f6;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 10px;
+}
+
+/* popup modal */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(5px);
+}
+.modal-content {
+  background: #0d224d;
+  padding: 25px;
+  border-radius: 15px;
+  width: 300px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+.modal-content h3 {
+  color: #ffca28;
+}
+.modal.show { display: flex; }
+</style>
+</head>
+<body>
+
+<header>🏦 Welcome to VNR BANK</header>
+
+<div class="container" id="createBox">
+  <h1>Create Account</h1>
+  <input type="text" id="name" placeholder="Enter Full Name">
+  <input type="password" id="pin" placeholder="Set 8-Character PIN (A–Z, 0–9)">
+  <button onclick="createAccount()">Create Account</button>
+  <p class="switch" onclick="toggleBox()">Already have an account?</p>
+</div>
+
+<div class="container" id="loginBox" style="display:none;">
+  <h1>Login</h1>
+  <input type="number" id="loginAcc" placeholder="Enter Account Number">
+  <input type="password" id="loginPin" placeholder="Enter PIN">
+  <button onclick="login()">Login</button>
+  <p class="switch" onclick="toggleBox()">Create new account</p>
+</div>
+
+<!-- Popup -->
+<div class="modal" id="popup">
+  <div class="modal-content">
+    <h3 id="popupTitle"></h3>
+    <p id="popupText"></p>
+    <button onclick="closePopup()">OK</button>
+  </div>
+</div>
+
+<script>
+function toggleBox() {
+  document.getElementById("createBox").style.display =
+    document.getElementById("createBox").style.display === "none" ? "block" : "none";
+  document.getElementById("loginBox").style.display =
+    document.getElementById("loginBox").style.display === "none" ? "block" : "none";
+}
+
+function showPopup(title, text) {
+  document.getElementById("popupTitle").innerText = title;
+  document.getElementById("popupText").innerText = text;
+  document.getElementById("popup").classList.add("show");
+}
+function closePopup() {
+  document.getElementById("popup").classList.remove("show");
+}
+
+/* Generate a random 10-digit account number */
+function generateAccountNumber() {
+  return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+}
+
+function createAccount() {
+  const name = document.getElementById("name").value.trim();
+  const pin = document.getElementById("pin").value.trim();
+
+  if (!name || !pin) {
+    showPopup("⚠ Missing Info", "Please fill in all fields.");
+    return;
+  }
+
+  // PIN Validation: 8 characters, uppercase A–Z or 0–9 only
+  if (!/^[A-Z0-9]{8}$/.test(pin)) {
+    showPopup("❌ Invalid PIN", "PIN must be exactly 8 characters (A–Z and 0–9 only, uppercase).");
+    return;
+  }
+
+  let accounts = JSON.parse(localStorage.getItem("vnrAccounts") || "[]");
+  let exists = accounts.find(a => a.name.toLowerCase() === name.toLowerCase());
+
+  if (exists) {
+    showPopup("❌ Already Exists", "An account with this name already exists!");
+    return;
+  }
+
+  let accNo = generateAccountNumber();
+
+  let newAcc = {
+    name: name,
+    accNo: accNo,
+    pin: pin,
+    balance: 0,
+    history: []
+  };
+
+  accounts.push(newAcc);
+  localStorage.setItem("vnrAccounts", JSON.stringify(accounts));
+  localStorage.setItem("vnrAccount", JSON.stringify(newAcc));
+
+  showPopup("✅ Success", `Account created!\nYour Account No: ${accNo}`);
+  setTimeout(() => window.location.href = "dashboard.html", 1500);
+}
+
+function login() {
+  const accNo = document.getElementById("loginAcc").value.trim();
+  const pin = document.getElementById("loginPin").value.trim();
+
+  let accounts = JSON.parse(localStorage.getItem("vnrAccounts") || "[]");
+  let found = accounts.find(a => a.accNo === accNo && a.pin === pin);
+
+  if (!found) {
+    showPopup("🚫 Invalid", "Incorrect account number or PIN!");
+    return;
+  }
+
+  localStorage.setItem("vnrAccount", JSON.stringify(found));
+  showPopup("✅ Logged In", "Welcome back, " + found.name + "!");
+  setTimeout(() => window.location.href = "dashboard.html", 1000);
+}
+</script>
+</body>
+</html>
